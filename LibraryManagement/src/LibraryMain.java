@@ -6,7 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class Main {
+public class LibraryMain {
     static Map<Integer, ArrayList<Object>> bookMap = new HashMap<>(); // 도서 저장소
     static int bookCount = 0; // 고유 ID 생성을 위한 카운트 변수
     static Scanner sc = new Scanner(System.in);
@@ -35,6 +35,7 @@ public class Main {
             // 파일 읽기 시작
             try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
                 String line;
+
                 while ((line = br.readLine()) != null) {
                     // CSV의 한 줄을 쉼표로 분리 (데이터 예시: admin,1111,ADMIN)
                     String[] userInfo = line.split(",");
