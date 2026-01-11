@@ -2,6 +2,9 @@
 .trash
 .obsidian
 
+# JavaDoc file
+LibraryManagement/docs
+
 # Compiled class file
 *.class
 
