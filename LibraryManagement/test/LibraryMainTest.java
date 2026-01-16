@@ -1,5 +1,8 @@
 import org.junit.jupiter.api.*;
 import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,18 +83,30 @@ class LibraryMainTest {
     }
 
     @Test
-    @DisplayName("관리자가 1번 선택 검증")
-    void adminChoice1() {
-        // Given
-        provideInput("1\n");
-        String role = "ADMIN";
+    @DisplayName("도서 등록 시 입력값에 따른 출력 메시지와 Map 저장 상태를 확인한다")
+    void testAddBookSuccess() {
+        // Given: 사용자 입력 시뮬레이션 (제목: 어린왕자, 저자: 생텍쥐페리)
+        String input = "어린왕자\n생텍쥐페리\n";
+        System.setIn(new ByteArrayInputStream(input.getBytes()));
 
-        // When
-        int result = LibraryMain.restart(role);
+        // LibrarySystem 내부의 Scanner를 새 입력 스트림으로 갱신
+        LibraryMain.sc = new Scanner(System.in);
 
-        // Then
-        assertEquals(1, result);
+        // When: 도서 등록 실행
+        LibraryMain.addBook();
+
+        // Then 1: 콘솔 출력 결과 확인
+        String output = outContent.toString();
+        assertTrue(output.contains("[결과] 등록이 완료되었습니다. (도서 ID: 1)"),
+                "성공 메시지에 도서 ID 1이 포함되어야 합니다.");
+
+        // Then 2: Map 데이터 저장 확인
+        assertFalse(LibraryMain.bookMap.isEmpty(), "bookMap에 데이터가 저장되어야 합니다.");
+
+        ArrayList<Object> savedBook = LibraryMain.bookMap.get(1);
+        assertNotNull(savedBook, "ID 1번에 해당하는 도서 정보가 있어야 합니다.");
+        assertEquals("어린왕자", savedBook.get(0));
+        assertEquals("생텍쥐페리", savedBook.get(1));
+        assertEquals(true, savedBook.get(2)); // 대출 가능 여부 확인
     }
-
-
 }

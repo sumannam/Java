@@ -1,7 +1,4 @@
-import java.util.Map;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -10,6 +7,9 @@ public class LibraryMain {
     static Map<Integer, ArrayList<Object>> bookMap = new HashMap<>(); // 도서 저장소
     static int bookCount = 0; // 고유 ID 생성을 위한 카운트 변수
     static Scanner sc = new Scanner(System.in);
+
+    private static final String usersFile = "data/users.csv";
+    private static final String booksFile = "data/books.csv";
 
     private static final String ADMIN = "ADMIN";
     private static final String USER = "USER";
@@ -61,7 +61,7 @@ public class LibraryMain {
      */
     public static String login()
     {
-        String csvFile = "data/users.csv"; // 파일 경로 (환경에 따라 "src/data/users.csv" 등으로 수정 가능)
+
 
         while (true)
         {
@@ -75,7 +75,7 @@ public class LibraryMain {
             String role = "";
 
             // 파일 읽기 시작
-            try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+            try (BufferedReader br = new BufferedReader(new FileReader(usersFile))) {
                 String line;
 
                 while ((line = br.readLine()) != null) {
@@ -154,7 +154,7 @@ public class LibraryMain {
         switch (choice) {
             case 1:
                 if (role.equals("ADMIN")) {
-                    // addBook(); // 관리자: 도서 등록 메소드 호출
+                    addBook(); // 관리자: 도서 등록 메소드 호출
                     System.out.println("[알림] 도서 등록 기능을 실행합니다.");
                 } else {
                     // borrowBook(); // 일반 유저: 도서 대출 메소드 호출
@@ -193,4 +193,38 @@ public class LibraryMain {
 
         return choice;
     }
+
+    public static void addBook() {
+        System.out.println("\n[도서 등록]");
+
+        System.out.print("- 제목 입력: ");
+        String title = sc.nextLine().trim();
+
+        System.out.print("- 저자 입력: ");
+        String author = sc.nextLine().trim();
+
+        // [조건] 제목과 저자명이 공백이 아닌가?
+        if (title.isEmpty() || author.isEmpty()) {
+            System.out.println("[오류] 제목과 저자명은 공백일 수 없습니다. 다시 시도해주세요.");
+            return; // 관리자 메뉴로 복귀
+        }
+
+        // [처리] count 변수 1 증가시켜 book_id 생성
+        bookCount++;
+        int book_id = bookCount;
+
+        // [처리] ArrayList에 [제목, 저자, true] 저장
+        ArrayList<Object> bookInfo = new ArrayList<>();
+        bookInfo.add(title);   // index 0: 제목
+        bookInfo.add(author);  // index 1: 저자
+        bookInfo.add(true);    // index 2: 대출 가능 여부 (true = 가능)
+
+        // [처리] Map.put(book_id, list)
+        bookMap.put(book_id, bookInfo);
+
+        // [결과] 메시지 출력
+        System.out.println("-----------------------------------------------------------");
+        System.out.printf("[결과] 등록이 완료되었습니다. (도서 ID: %d)\n", book_id);
+    }
+
 }
