@@ -11,11 +11,34 @@ public class LibraryMain {
     static int bookCount = 0; // 고유 ID 생성을 위한 카운트 변수
     static Scanner sc = new Scanner(System.in);
 
+    private static final String ADMIN = "ADMIN";
+    private static final String USER = "USER";
+
     public static void main(String[] args)
     {
-        // String currentRole = login();
+        boolean isRunning = true;
+
+        //String currentRole = login();
         String currentRole = "ADMIN";
         System.out.println("로그인 성공! 권한: " + currentRole);
+
+        while (isRunning)
+        {
+            int choice = -9;
+            if ( currentRole.equals(ADMIN) )
+            {
+                showAdminMenu();
+                choice = restart(ADMIN);
+            }
+            else if ( currentRole.equals(USER) )
+            {
+                showUserMenu();
+                choice = restart(USER);
+            }
+
+            if ( choice == 0 )
+                break;
+        }
     }
 
     /**
@@ -87,5 +110,87 @@ public class LibraryMain {
                 System.out.println("[오류] 아이디 또는 비밀번호가 틀렸습니다. 다시 시도해 주세요.");
             }
         }
+    }
+
+    /**
+     * 관리자 전용 메뉴 출력
+     */
+    public static void showAdminMenu() {
+        System.out.println("===========================================================");
+        System.out.println("          [ 관리자 전용 메뉴 ]");
+        System.out.println("===========================================================");
+        System.out.println("  1. 도서 등록 (Add)");
+        System.out.println("  2. 도서 수정 및 삭제 (Edit/Delete)");
+        showCommonMenu(); // 공통 메뉴 호출
+    }
+
+    /**
+     * 일반 사용자 전용 메뉴 출력
+     */
+    public static void showUserMenu() {
+        System.out.println("===========================================================");
+        System.out.println("          [ 일반 사용자 메뉴 ]");
+        System.out.println("===========================================================");
+        System.out.println("  1. 도서 대출 (Borrow)");
+        System.out.println("  2. 나의 대출 현황 (My Books)");
+        showCommonMenu(); // 공통 메뉴 호출
+    }
+
+    /**
+     * 모든 사용자가 공통으로 사용하는 메뉴 출력
+     */
+    private static void showCommonMenu() {
+        System.out.println("  3. 전체 도서 목록 (List)");
+        System.out.println("  4. 도서 검색 (Search)");
+        System.out.println("  0. 종료 (Exit)");
+        System.out.println("-----------------------------------------------------------");
+    }
+
+    public static int restart(String role) {
+        System.out.print("  명령 입력: ");
+        int choice = sc.nextInt();
+        sc.nextLine(); // 숫자 입력 후 남은 엔터 버퍼 비우기
+
+        switch (choice) {
+            case 1:
+                if (role.equals("ADMIN")) {
+                    // addBook(); // 관리자: 도서 등록 메소드 호출
+                    System.out.println("[알림] 도서 등록 기능을 실행합니다.");
+                } else {
+                    // borrowBook(); // 일반 유저: 도서 대출 메소드 호출
+                    System.out.println("[알림] 도서 대출 기능을 실행합니다.");
+                }
+                break;
+
+            case 2:
+                if (role.equals("ADMIN")) {
+                    // editOrDeleteBook(); // 관리자: 수정/삭제 호출
+                    System.out.println("[알림] 도서 수정/삭제 기능을 실행합니다.");
+                } else {
+                    // showMyStatus(); // 일반 유저: 대출 현황 호출
+                    System.out.println("[알림] 나의 대출 현황을 확인합니다.");
+                }
+                break;
+
+            case 3:
+                // listBooks(); // 공통: 전체 목록 조회
+                System.out.println("[알림] 전체 도서 목록을 출력합니다.");
+                break;
+
+            case 4:
+                // searchBook(); // 공통: 도서 검색
+                System.out.println("[알림] 도서 검색 기능을 실행합니다.");
+                break;
+
+            case 0:
+                System.out.println("[시스템] 종료를 선택하셨습니다.");
+                break;
+
+            default:
+                System.out.println("[오류] 잘못된 번호입니다. 다시 선택해 주세요.");
+                break;
+        }
+
+        return choice;
     }
 }
