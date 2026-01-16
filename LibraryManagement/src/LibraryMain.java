@@ -2,6 +2,8 @@ import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 
 public class LibraryMain {
     static Map<Integer, ArrayList<Object>> bookMap = new HashMap<>(); // 도서 저장소
@@ -36,8 +38,10 @@ public class LibraryMain {
                 choice = restart(USER);
             }
 
-            if ( choice == 0 )
+            if ( choice == 0 ) {
+                handleExit();
                 break;
+            }
         }
     }
 
@@ -58,11 +62,12 @@ public class LibraryMain {
      * @see <a href="https://github.com/sumannam/Java/issues/8">Github Issue #8: 로그인 기능 개발</a>
      * @see <a href="https://github.com/sumannam/Java/issues/9">Github Issue #9: 로그인을 위한 users.csv 파일 구조</a>
      * @see <a href="https://github.com/sumannam/Java/issues/10">Github Issue #10: 로그인 단위 테스트</a>
+     *
+     * @see LibraryMainTest#testAdminLoginSuccess()
+     * @see LibraryMainTest#testUserLoginSuccess()
      */
     public static String login()
     {
-
-
         while (true)
         {
             System.out.println("\n========= CSV 로그인 시스템 =========");
@@ -155,7 +160,6 @@ public class LibraryMain {
             case 1:
                 if (role.equals("ADMIN")) {
                     addBook(); // 관리자: 도서 등록 메소드 호출
-                    System.out.println("[알림] 도서 등록 기능을 실행합니다.");
                 } else {
                     // borrowBook(); // 일반 유저: 도서 대출 메소드 호출
                     System.out.println("[알림] 도서 대출 기능을 실행합니다.");
@@ -194,6 +198,28 @@ public class LibraryMain {
         return choice;
     }
 
+    /**
+     * 사용자로부터 도서 정보를 입력받아 시스템에 새로운 도서를 등록합니다.
+     * * <p>이 메서드는 다음과 같은 절차로 진행됩니다:</p>
+     * <ol>
+     * <li>사용자로부터 도서의 제목과 저자명을 입력받습니다.</li>
+     * <li>입력값이 비어있는지(공백 포함) 유효성 검사를 수행합니다.</li>
+     * <li>{@code bookCount}를 증가시켜 고유한 도서 ID({@code book_id})를 생성합니다.</li>
+     * <li>도서 정보를 {@code ArrayList}에 담아 {@link #bookMap}에 저장합니다.</li>
+     * </ol>
+     * * <p>저장되는 리스트 구조(ArrayList&lt;Object&gt;):</p>
+     * <ul>
+     * <li>Index 0: {@code String} 제목</li>
+     * <li>Index 1: {@code String} 저자</li>
+     * <li>Index 2: {@code Boolean} 대출 가능 여부 (기본값: {@code true})</li>
+     * </ul>
+     * * @see #bookCount
+     * @see #bookMap
+     * @see #sc
+     * @see <a href="https://github.com/sumannam/Java/issues/11">Github Issue #11: 도서 등록 개발</a>
+     *
+     * @see LibraryMainTest#testAddBookSuccess()
+     */
     public static void addBook() {
         System.out.println("\n[도서 등록]");
 
@@ -225,6 +251,80 @@ public class LibraryMain {
         // [결과] 메시지 출력
         System.out.println("-----------------------------------------------------------");
         System.out.printf("[결과] 등록이 완료되었습니다. (도서 ID: %d)\n", book_id);
+    }
+
+    public static void handleExit() {
+        System.out.println("===========================================================");
+        System.out.println("          [ 프로그램 종료 확인 ]");
+        System.out.println("===========================================================");
+        System.out.print("  정말로 프로그램을 종료하시겠습니까? [Y/n]: ");
+
+        String confirm = sc.nextLine().trim().toLowerCase();
+
+        if (confirm.equals("y") || confirm.isEmpty()) {
+            System.out.println("-----------------------------------------------------------");
+            System.out.println("  [데이터 저장 중...]");
+
+            // 파일 저장 메서드 호출
+            if (saveBooksToCSV()) {
+                System.out.println("  => 모든 데이터가 성공적으로 저장되었습니다.");
+            } else {
+                System.out.println("  [!] 데이터 저장 중 오류가 발생했습니다.");
+            }
+
+            System.out.println("  도서 관리 프로그램을 이용해 주셔서 감사합니다.");
+            System.out.println("===========================================================");
+            System.exit(0); // 프로그램 완전 종료
+        } else {
+            System.out.println("[알림] 종료를 취소하고 메뉴로 돌아갑니다.");
+        }
+    }
+
+    /**
+     * 현재 메모리(bookMap)에 저장된 모든 도서 데이터를 CSV 파일로 저장합니다.
+     * * <p>파일 저장 형식은 다음과 같습니다:</p>
+     * <ul>
+     * <li>ID (Integer)</li>
+     * <li>제목 (String)</li>
+     * <li>저자 (String)</li>
+     * <li>대출 가능 여부 (Boolean)</li>
+     * </ul>
+     * * <p>데이터는 {@code booksFile} 경로에 기록되며, 기존 파일이 있을 경우 덮어씁니다.</p>
+     *
+     * @return 저장에 성공하면 {@code true}, 입출력 오류(IOException) 발생 시 {@code false}를 반환합니다.
+     * @see #bookMap
+     * @see #booksFile
+     * @see <a href="https://github.com/sumannam/Java/issues/17">Github Issue #17: 데이터 저장 기능 개발</a>     *
+     *
+     * @see LibraryMainTest#testSaveBooksToCSV()
+     */
+    public static boolean saveBooksToCSV()
+    {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(booksFile))) {
+            // 헤더 작성 (선택사항)
+            // bw.write("ID,제목,저자,대출가능여부");
+            // bw.newLine();
+
+            for (Map.Entry<Integer, ArrayList<Object>> entry : bookMap.entrySet()) {
+                Integer id = entry.getKey();
+                ArrayList<Object> info = entry.getValue();
+
+                // CSV 형식: ID,제목,저자,대출여부
+                String line = String.format("%d,%s,%s,%b",
+                        id,
+                        info.get(0), // 제목
+                        info.get(1), // 저자
+                        info.get(2)  // 대출여부 (true/false)
+                );
+
+                bw.write(line);
+                bw.newLine();
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 }
