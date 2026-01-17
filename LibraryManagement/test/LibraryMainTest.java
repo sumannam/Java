@@ -320,4 +320,46 @@ class LibraryMainTest {
         assertTrue(output.contains("자바의 정석") && output.contains("Do it! 자바"));
         assertFalse(output.contains("어린왕자"), "검색어와 관련 없는 도서는 출력되지 않아야 합니다.");
     }
+
+    @Test
+    @DisplayName("도서 대출 성공 테스트: ID 존재 및 대출 가능 상태")
+    void borrowBook_Success() {
+        // 가상 입력 설정: ID 2 입력 후, 확인 대답 'Y' 입력
+        String input = "2\nY\n";
+        provideInput(input);
+
+        LibraryMain.borrowBook();
+
+        // 결과 검증: ID 2번 도서의 상태값(index 2)이 false로 변경되었는지 확인
+        assertFalse((boolean) LibraryMain.bookMap.get(2).get(2));
+    }
+
+    @Test
+    @DisplayName("도서 대출 실패 테스트: 이미 대출 중인 경우")
+    void borrowBook_AlreadyBorrowed() {
+        // 이미 대출 중인 상태로 설정
+        LibraryMain.bookMap.get(2).set(2, false);
+
+        // 가상 입력 설정: ID 2 입력
+        String input = "2\n";
+        provideInput(input);
+
+        LibraryMain.borrowBook();
+
+        // 결과 검증: 상태값은 그대로 false여야 함
+        assertFalse((boolean) LibraryMain.bookMap.get(2).get(2));
+    }
+
+    @Test
+    @DisplayName("도서 대출 취소 테스트: 사용자가 'N'을 선택한 경우")
+    void borrowBook_Cancel() {
+        // 가상 입력 설정: ID 1 입력 후, 취소 대답 'N' 입력
+        String input = "1\nN\n";
+        provideInput(input);
+
+        LibraryMain.borrowBook();
+
+        // 결과 검증: 대출을 취소했으므로 상태값은 그대로 true여야 함
+        assertTrue((boolean) LibraryMain.bookMap.get(1).get(2));
+    }
 }

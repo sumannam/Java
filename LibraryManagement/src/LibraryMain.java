@@ -17,7 +17,7 @@ public class LibraryMain {
         boolean isRunning = true;
 
         //String currentRole = login();
-        String currentRole = "ADMIN";
+        String currentRole = "USER";
         System.out.println("로그인 성공! 권한: " + currentRole);
 
         loadBooksFromCSV();
@@ -181,7 +181,8 @@ public class LibraryMain {
     /**
      * 관리자 전용 메뉴 출력
      */
-    public static void showAdminMenu() {
+    public static void showAdminMenu()
+    {
         System.out.println("===========================================================");
         System.out.println("          [ 관리자 전용 메뉴 ]");
         System.out.println("===========================================================");
@@ -193,7 +194,8 @@ public class LibraryMain {
     /**
      * 일반 사용자 전용 메뉴 출력
      */
-    public static void showUserMenu() {
+    public static void showUserMenu()
+    {
         System.out.println("===========================================================");
         System.out.println("          [ 일반 사용자 메뉴 ]");
         System.out.println("===========================================================");
@@ -205,14 +207,16 @@ public class LibraryMain {
     /**
      * 모든 사용자가 공통으로 사용하는 메뉴 출력
      */
-    private static void showCommonMenu() {
+    private static void showCommonMenu()
+    {
         System.out.println("  3. 전체 도서 목록 (List)");
         System.out.println("  4. 도서 검색 (Search)");
         System.out.println("  0. 종료 (Exit)");
         System.out.println("-----------------------------------------------------------");
     }
 
-    public static int restart(String role) {
+    public static int restart(String role)
+    {
         System.out.print("  명령 입력: ");
         int choice = sc.nextInt();
         sc.nextLine(); // 숫자 입력 후 남은 엔터 버퍼 비우기
@@ -221,10 +225,8 @@ public class LibraryMain {
             case 1:
                 if (role.equals("ADMIN"))
                     addBook(); // 관리자: 도서 등록 메소드 호출
-                else {
-                    // borrowBook(); // 일반 유저: 도서 대출 메소드 호출
-                    System.out.println("[알림] 도서 대출 기능을 실행합니다.");
-                }
+                else
+                    borrowBook(); // 일반 유저: 도서 대출 메소드 호출
                 break;
 
             case 2:
@@ -587,6 +589,63 @@ public class LibraryMain {
             }
         }
         System.out.println("-----------------------------------------------------------");
+    }
+
+    /**
+     * 사용자로부터 도서 ID를 입력받아 도서 대출 처리를 수행하는 메소드입니다.
+     * * <p>이 메소드는 다음과 같은 비즈니스 로직을 따릅니다:</p>
+     * <ul>
+     * <li><b>조건 1:</b> 입력된 ID가 {@code bookMap}에 존재하는지 확인합니다.</li>
+     * <li><b>조건 2:</b> 해당 도서 리스트의 2번 인덱스(상태값)가 {@code true}(대출 가능)인지 확인합니다.</li>
+     * <li><b>확인 절차:</b> 대출 가능 시 사용자의 최종 승인(Y/N)을 입력받습니다.</li>
+     * <li><b>데이터 업데이트:</b> 대출 성공 시 해당 도서의 상태값을 {@code false}(대출 불가)로 변경합니다.</li>
+     * </ul>
+     * * @throws java.util.NoSuchElementException 입력 과정에서 요소가 없을 경우 발생할 수 있습니다.
+     * @see #bookMap
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/28">Github Issue #28: 도서 대출 기능 개발</a>
+     *
+     * @see LibraryMainTest#borrowBook_Success() 단위 테스트: 도서 대출 성공 테스트: ID 존재 및 대출 가능 상태
+     * @see LibraryMainTest#borrowBook_AlreadyBorrowed() 단위 테스트: 도서 대출 실패 테스트: 이미 대출 중인 경우
+     * @see LibraryMainTest#borrowBook_Cancel() 단위 테스트: 도서 대출 취소 테스트: 사용자가 'N'을 선택한 경우
+     */
+    public static void borrowBook() {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("[도서 대출]");
+        System.out.print("- 대출할 도서 ID 입력: ");
+        int inputId = sc.nextInt();
+        sc.nextLine(); // 버퍼 비우기
+
+        // 조건 1: 입력한 ID가 존재하는가?
+        if (bookMap.containsKey(inputId)) {
+            List<Object> targetBook = bookMap.get(inputId);
+            String bookTitle = (String) targetBook.get(1);
+
+            // 조건 2: 해당 도서의 상태값(list.get(2))이 true(대출 가능)인가?
+            boolean isAvailable = (boolean) targetBook.get(2);
+
+            if (isAvailable) {
+                System.out.println("-----------------------------------------------------------");
+                System.out.print("[확인] '" + bookTitle + "' 도서를 대출하시겠습니까? (Y/N): ");
+                String confirm = sc.nextLine();
+
+                if (confirm.equalsIgnoreCase("Y")) {
+                    // 처리: 상태값을 false로 변경(list.set(2, false))
+                    targetBook.set(2, false);
+                    System.out.println("[결과] 대출되었습니다.");
+                } else {
+                    System.out.println("[결과] 대출이 취소되었습니다.");
+                }
+            } else {
+                // 조건 2가 false인 경우
+                System.out.println("-----------------------------------------------------------");
+                System.out.println("[결과] 이미 대출 중인 도서입니다.");
+            }
+        } else {
+            // 조건 1이 false인 경우
+            System.out.println("[오류] 해당 ID의 도서가 존재하지 않습니다.");
+        }
     }
 
 }
