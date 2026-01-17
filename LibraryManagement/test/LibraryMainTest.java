@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,30 +15,44 @@ class LibraryMainTest {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
 
-    private final String BOOKS_FILE_PATH = "data/books.csv";
+    private final String TEST_FILE_PATH = "data/books_test.csv";
 
     @BeforeEach
     void setUp() {
-        // 테스트 전 기존 파일이 있다면 삭제하여 깨끗한 상태로 시작
-        File file = new File(BOOKS_FILE_PATH);
-        if (file.exists()) {
-            file.delete();
+        try {
+            File file = new File(TEST_FILE_PATH);
+
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            if (file.exists()) {
+                file.delete();
+            }
+            file.createNewFile();
+
+            LibraryMain.bookMap.clear();
+
+            // 테스트 데이터 준비
+            LibraryMain.bookMap.clear();
+
+            ArrayList<Object> book1 = new ArrayList<>(Arrays.asList("어린왕자", "생텍쥐페리", true));
+            ArrayList<Object> book2 = new ArrayList<>(Arrays.asList("자바의 정석", "남궁성", false));
+
+            LibraryMain.bookMap.put(1, book1);
+            LibraryMain.bookMap.put(2, book2);
+
+        } catch (IOException e) {
+            // 테스트 환경 구축 실패 시 강제로 테스트 실패 처리
+            org.junit.jupiter.api.Assertions.fail("파일 생성 중 오류 발생: " + e.getMessage());
         }
-
-        // 테스트 데이터 준비
-        LibraryMain.bookMap.clear();
-
-        ArrayList<Object> book1 = new ArrayList<>(Arrays.asList("어린왕자", "생텍쥐페리", true));
-        ArrayList<Object> book2 = new ArrayList<>(Arrays.asList("자바의 정석", "남궁성", false));
-
-        LibraryMain.bookMap.put(1, book1);
-        LibraryMain.bookMap.put(2, book2);
     }
 
     @AfterEach
     void tearDown() {
         // 테스트가 끝난 후 생성된 파일 삭제 (테스트 환경 정리)
-        File file = new File(BOOKS_FILE_PATH);
+        File file = new File(TEST_FILE_PATH);
         if (file.exists()) {
             file.delete();
         }
@@ -145,13 +160,13 @@ class LibraryMainTest {
     @DisplayName("도서 목록이 CSV 파일로 성공적으로 저장되는지 확인")
     void testSaveBooksToCSV() throws IOException {
         // When: 저장 메서드 실행
-        boolean isSaved = LibraryMain.saveBooksToCSV();
+        boolean isSaved = LibraryMain.saveBooksToCSV(TEST_FILE_PATH);
 
         // Then 1: 반환값이 true여야 함
         assertTrue(isSaved, "파일 저장 메서드는 true를 반환해야 합니다.");
 
-        // Then 2: 파일이 실제로 존재하는지 확인
-        File file = new File(BOOKS_FILE_PATH);
+        // Then 1: 반환값이 true여야 함
+        File file = new File(TEST_FILE_PATH);
         assertTrue(file.exists(), "books.csv 파일이 생성되어야 합니다.");
 
         // Then 3: 파일 내용 검증
@@ -167,5 +182,84 @@ class LibraryMainTest {
             assertNotNull(line2);
             assertTrue(line2.contains("2,자바의 정석,남궁성,false") || line2.contains("1,어린왕자,생텍쥐페리,true"));
         }
+    }
+
+    @Test
+    @DisplayName("도서 제목 수정 성공")
+    void testEditTitle() {
+        // Given: ID 1번에 도서 등록
+        LibraryMain.bookMap.put(1, new ArrayList<>(Arrays.asList("오래된 제목", "저자", true)));
+        // 입력 시나리오: ID(1) -> 메뉴(1.제목수정) -> 새 제목(어린왕자)
+        provideInput("1\n1\n어린왕자\n");
+
+        // When
+        LibraryMain.editOrDeleteBook();
+
+        // Then
+        assertEquals("어린왕자", LibraryMain.bookMap.get(1).get(0));
+        assertTrue(outContent.toString().contains("제목이 수정되었습니다"));
+    }
+
+    @Test
+    @DisplayName("도서 저자 수정 성공")
+    void testEditAuthor() {
+        // Given: ID 1번에 도서 등록
+        LibraryMain.bookMap.put(1, new ArrayList<>(Arrays.asList("제목", "오래된 저자", true)));
+        // 입력 시나리오: ID(1) -> 메뉴(2.저자수정) -> 새 저자(생텍쥐페리)
+        provideInput("1\n2\n생텍쥐페리\n");
+
+        // When
+        LibraryMain.editOrDeleteBook();
+
+        // Then
+        assertEquals("생텍쥐페리", LibraryMain.bookMap.get(1).get(1));
+        assertTrue(outContent.toString().contains("저자명이 수정되었습니다"));
+    }
+
+    @Test
+    @DisplayName("도서 삭제 성공")
+    void testDeleteBook() {
+        // Given: ID 5번에 도서 등록
+        LibraryMain.bookMap.put(5, new ArrayList<>(Arrays.asList("삭제할 도서", "저자", true)));
+        // 입력 시나리오: ID(5) -> 메뉴(3.도서삭제)
+        provideInput("5\n3\n");
+
+        // When
+        LibraryMain.editOrDeleteBook();
+
+        // Then
+        assertFalse(LibraryMain.bookMap.containsKey(5), "ID 5번 도서는 삭제되어 없어야 합니다.");
+        assertTrue(outContent.toString().contains("삭제되었습니다"));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 ID 입력 시 오류 메시지 출력")
+    void testInvalidId() {
+        // Given: Map이 비어있거나 해당 ID가 없음
+        LibraryMain.bookMap.clear();
+        provideInput("99\n"); // 존재하지 않는 ID 99 입력
+
+        // When
+        LibraryMain.editOrDeleteBook();
+
+        // Then
+        assertTrue(outContent.toString().contains("[오류] 해당 ID의 도서가 존재하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("수정 중 0번(취소)을 선택하면 데이터 유지")
+    void testCancelEdit() {
+        // Given
+        String originalTitle = "기존제목";
+        LibraryMain.bookMap.put(1, new ArrayList<>(Arrays.asList(originalTitle, "저자", true)));
+        // 입력 시나리오: ID(1) -> 메뉴(0.취소)
+        provideInput("1\n0\n");
+
+        // When
+        LibraryMain.editOrDeleteBook();
+
+        // Then
+        assertEquals(originalTitle, LibraryMain.bookMap.get(1).get(0), "취소 시 제목이 변하지 않아야 합니다.");
+        assertTrue(outContent.toString().contains("수정을 취소합니다"));
     }
 }

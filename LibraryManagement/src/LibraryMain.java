@@ -158,19 +158,18 @@ public class LibraryMain {
 
         switch (choice) {
             case 1:
-                if (role.equals("ADMIN")) {
+                if (role.equals("ADMIN"))
                     addBook(); // 관리자: 도서 등록 메소드 호출
-                } else {
+                else {
                     // borrowBook(); // 일반 유저: 도서 대출 메소드 호출
                     System.out.println("[알림] 도서 대출 기능을 실행합니다.");
                 }
                 break;
 
             case 2:
-                if (role.equals("ADMIN")) {
-                    // editOrDeleteBook(); // 관리자: 수정/삭제 호출
-                    System.out.println("[알림] 도서 수정/삭제 기능을 실행합니다.");
-                } else {
+                if (role.equals("ADMIN"))
+                    editOrDeleteBook(); // 관리자: 수정/삭제 호출
+                else {
                     // showMyStatus(); // 일반 유저: 대출 현황 호출
                     System.out.println("[알림] 나의 대출 현황을 확인합니다.");
                 }
@@ -266,7 +265,7 @@ public class LibraryMain {
             System.out.println("  [데이터 저장 중...]");
 
             // 파일 저장 메서드 호출
-            if (saveBooksToCSV()) {
+            if (saveBooksToCSV(booksFile)) {
                 System.out.println("  => 모든 데이터가 성공적으로 저장되었습니다.");
             } else {
                 System.out.println("  [!] 데이터 저장 중 오류가 발생했습니다.");
@@ -289,18 +288,18 @@ public class LibraryMain {
      * <li>저자 (String)</li>
      * <li>대출 가능 여부 (Boolean)</li>
      * </ul>
-     * * <p>데이터는 {@code booksFile} 경로에 기록되며, 기존 파일이 있을 경우 덮어씁니다.</p>
+     * * <p>입력 파라미터 {@code filepath}는 books.csv와 books_test.csv를 분리하기 위해 사용한다.</p>
      *
      * @return 저장에 성공하면 {@code true}, 입출력 오류(IOException) 발생 시 {@code false}를 반환합니다.
      * @see #bookMap
      * @see #booksFile
-     * @see <a href="https://github.com/sumannam/Java/issues/17">Github Issue #17: 데이터 저장 기능 개발</a>     *
+     * @see <a href="https://github.com/sumannam/Java/issues/17">Github Issue #17: 데이터 저장 기능 개발</a>
      *
      * @see LibraryMainTest#testSaveBooksToCSV()
      */
-    public static boolean saveBooksToCSV()
+    public static boolean saveBooksToCSV(String filepath)
     {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(booksFile))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filepath))) {
             // 헤더 작성 (선택사항)
             // bw.write("ID,제목,저자,대출가능여부");
             // bw.newLine();
@@ -324,6 +323,107 @@ public class LibraryMain {
         } catch (IOException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * 특정 도서의 고유 ID를 입력받아 해당 도서의 정보를 수정하거나 시스템에서 삭제합니다.
+     * * <p>이 메서드는 다음과 같은 흐름으로 동작합니다:</p>
+     * <ol>
+     * <li>사용자로부터 관리할 도서의 ID를 입력받습니다.</li>
+     * <li>{@link #bookMap}에서 해당 ID의 존재 여부를 확인합니다.</li>
+     * <li>도서가 존재할 경우 현재 상세 정보(제목, 저자, 대출 상태)를 표시합니다.</li>
+     * <li>하위 메뉴를 통해 다음 작업을 수행합니다:
+     * <ul>
+     * <li><b>1. 제목 수정:</b> 해당 도서 리스트의 {@code index 0}을 갱신합니다.</li>
+     * <li><b>2. 저자 수정:</b> 해당 도서 리스트의 {@code index 1}을 갱신합니다.</li>
+     * <li><b>3. 도서 삭제:</b> {@code bookMap}에서 해당 키(ID)와 값을 완전히 제거합니다.</li>
+     * <li><b>0. 취소:</b> 변경 사항 없이 이전 메뉴로 돌아갑니다.</li>
+     * </ul>
+     * </li>
+     * </ol>
+     *
+     * <p>데이터 유효성 검사:</p>
+     * <ul>
+     * <li>존재하지 않는 ID 입력 시 오류 메시지를 출력하고 종료됩니다.</li>
+     * <li>수정 시 공백(Empty String)을 입력하면 데이터가 변경되지 않습니다.</li>
+     * </ul>
+     *
+     * @see #bookMap
+     * @see #sc
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/19">Github Issue #19: 도서 수정 및 수정</a>
+     *
+     * @see LibraryMainTest#testEditTitle() 단위 테스트: 제목 수정 검증
+     * @see LibraryMainTest#testEditAuthor() 단위 테스트: 저자 수정 검증
+     * @see LibraryMainTest#testDeleteBook() 단위 테스트: 도서 삭제 검증
+     */
+    public static void editOrDeleteBook() {
+        System.out.println("\n[도서 수정 및 삭제]");
+        System.out.print("- 관리할 도서 ID 입력: ");
+
+        // ID 입력 받기
+        if (!sc.hasNextInt()) {
+            System.out.println("[오류] 숫자만 입력 가능합니다.");
+            sc.nextLine(); // 버퍼 비우기
+            return;
+        }
+        int bookId = sc.nextInt();
+        sc.nextLine(); // 엔터 버퍼 비우기
+
+        // 1. 도서 존재 여부 확인
+        if (!bookMap.containsKey(bookId)) {
+            System.out.println("[오류] 해당 ID의 도서가 존재하지 않습니다.");
+            return;
+        }
+
+        ArrayList<Object> bookInfo = bookMap.get(bookId);
+        String title = (String) bookInfo.get(0);
+        String author = (String) bookInfo.get(1);
+        boolean isAvailable = (boolean) bookInfo.get(2);
+        String status = isAvailable ? "비치중" : "대출중";
+
+        // 2. 현재 정보 출력 및 메뉴 표시
+        System.out.println("-----------------------------------------------------------");
+        System.out.printf("  현재 정보: [%s | %s | %s]\n", title, author, status);
+        System.out.println("  1. 제목 수정  2. 저자 수정  3. 도서 삭제  0. 취소");
+        System.out.println("-----------------------------------------------------------");
+        System.out.print("  선택: ");
+
+        int choice = sc.nextInt();
+        sc.nextLine(); // 버퍼 비우기
+
+        switch (choice) {
+            case 1: // 제목 수정
+                System.out.print("- 새 제목 입력: ");
+                String newTitle = sc.nextLine().trim();
+                if (!newTitle.isEmpty()) {
+                    bookInfo.set(0, newTitle);
+                    System.out.println("[결과] 도서 제목이 수정되었습니다.");
+                }
+                break;
+
+            case 2: // 저자 수정
+                System.out.print("- 새 저자 입력: ");
+                String newAuthor = sc.nextLine().trim();
+                if (!newAuthor.isEmpty()) {
+                    bookInfo.set(1, newAuthor);
+                    System.out.println("[결과] 저자명이 수정되었습니다.");
+                }
+                break;
+
+            case 3: // 도서 삭제
+                bookMap.remove(bookId);
+                System.out.println("[결과] 해당 도서 정보가 시스템에서 삭제되었습니다.");
+                break;
+
+            case 0:
+                System.out.println("[알림] 수정을 취소합니다.");
+                break;
+
+            default:
+                System.out.println("[오류] 잘못된 선택입니다.");
+                break;
         }
     }
 
