@@ -1,9 +1,5 @@
+import java.io.*;
 import java.util.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 
 public class LibraryMain {
     static Map<Integer, ArrayList<Object>> bookMap = new HashMap<>(); // 도서 저장소
@@ -24,6 +20,8 @@ public class LibraryMain {
         String currentRole = "ADMIN";
         System.out.println("로그인 성공! 권한: " + currentRole);
 
+        loadBooksFromCSV();
+
         while (isRunning)
         {
             int choice = -9;
@@ -42,6 +40,69 @@ public class LibraryMain {
                 handleExit();
                 break;
             }
+        }
+    }
+
+    /**
+     * 지정된 경로의 CSV 파일로부터 도서 데이터를 읽어 메모리({@code bookMap})에 로드합니다.
+     * <p>파일을 한 줄씩 읽어 데이터를 분리한 후, 적절한 타입으로 변환하여 저장합니다.</p>
+     * <p>로드 완료 후, 다음 도서 등록 시 ID가 중복되지 않도록 {@code bookCount}를 가장 큰 ID 값으로 업데이트합니다.</p>
+     *
+     * @see #bookMap
+     * @see #bookCount
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/22">Github Issue #22: 이전에 저장한 데이터가 종료 시 삭제되는 문제 발생</a>
+     * @see <a href="https://github.com/sumannam/Java/issues/23">Github Issue #23: 프로그램 실행 시 books.csv 파일 bookMap에 저장</a>
+     *
+     * @see LibraryMainTest#testMapIsNotEmptyAfterLoad()
+     */
+    public static void loadBooksFromCSV()
+    {
+        File file = new File(booksFile);
+
+        // 파일이 존재하지 않으면 로드할 데이터가 없는 것이므로 종료
+        if (!file.exists()) {
+            System.out.println("[시스템] 기존 데이터 파일이 존재하지 않아 빈 상태로 시작합니다.");
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            int maxId = 0; // bookCount 동기화를 위한 변수
+
+            while ((line = br.readLine()) != null) {
+                // 빈 줄 건너뛰기
+                if (line.trim().isEmpty()) continue;
+
+                // CSV 데이터 분리 (ID, 제목, 저자, 대출여부)
+                String[] data = line.split(",");
+                if (data.length < 4) continue; // 데이터 형식이 맞지 않으면 건너뜀
+
+                int id = Integer.parseInt(data[0].trim());
+                String title = data[1].trim();
+                String author = data[2].trim();
+                boolean isAvailable = Boolean.parseBoolean(data[3].trim());
+
+                // 메모리에 복구
+                ArrayList<Object> bookInfo = new ArrayList<>();
+                bookInfo.add(title);
+                bookInfo.add(author);
+                bookInfo.add(isAvailable);
+
+                bookMap.put(id, bookInfo);
+
+                // 가장 큰 ID 값을 추적하여 카운트 업데이트 준비
+                if (id > maxId) {
+                    maxId = id;
+                }
+            }
+
+            // 다음 도서 등록을 위해 ID 카운트를 현재 최대 ID로 맞춤
+            bookCount = maxId;
+            System.out.println("[시스템] 데이터를 성공적으로 불러왔습니다. (총 " + bookMap.size() + "권)");
+
+        } catch (IOException | NumberFormatException e) {
+            System.out.println("[오류] 데이터 로딩 중 문제가 발생했습니다: " + e.getMessage());
         }
     }
 

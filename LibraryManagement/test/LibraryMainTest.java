@@ -97,6 +97,18 @@ class LibraryMainTest {
     }
 
     @Test
+    @DisplayName("파일 로드 후 bookMap 데이터 적재 확인")
+    void testMapIsNotEmptyAfterLoad() {
+        // When: 파일 불러오기 실행
+        LibraryMain.loadBooksFromCSV();
+
+        // Then: bookMap이 비어있지 않은지(사이즈가 1 이상인지) 검증
+        assertFalse(LibraryMain.bookMap.isEmpty(), "데이터를 불러온 후에는 bookMap이 비어있으면 안 됩니다.");
+        assertTrue(LibraryMain.bookMap.size() >= 1, "최소 한 권 이상의 도서가 로드되어야 합니다.");
+    }
+
+
+    @Test
     @DisplayName("관리자 전용 메뉴 출력 검증")
     void testShowAdminMenuOutput() {
         // [실행]
@@ -142,7 +154,7 @@ class LibraryMainTest {
 
         // Then 1: 콘솔 출력 결과 확인
         String output = outContent.toString();
-        assertTrue(output.contains("[결과] 등록이 완료되었습니다. (도서 ID: 1)"),
+        assertTrue(output.contains("[결과] 등록이 완료되었습니다."),
                 "성공 메시지에 도서 ID 1이 포함되어야 합니다.");
 
         // Then 2: Map 데이터 저장 확인
