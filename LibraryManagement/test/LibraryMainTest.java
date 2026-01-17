@@ -406,6 +406,6 @@ class LibraryMainTest {
         provideInput("99\n");
 
         // 예외 없이 메시지만 출력되는지 확인 (상태 변화를 확인할 대상 없음)
-        assertDoesNotThrow(() -> LibraryMain.returnBook());
+        assertDoesNotThrow(LibraryMain::returnBook);
     }
 }
