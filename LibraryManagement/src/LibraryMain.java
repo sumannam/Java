@@ -200,7 +200,7 @@ public class LibraryMain {
         System.out.println("          [ 일반 사용자 메뉴 ]");
         System.out.println("===========================================================");
         System.out.println("  1. 도서 대출 (Borrow)");
-        System.out.println("  2. 나의 대출 현황 (My Books)");
+        System.out.println("  2. 도서 반납 (Return)");
         showCommonMenu(); // 공통 메뉴 호출
     }
 
@@ -233,8 +233,7 @@ public class LibraryMain {
                 if (role.equals("ADMIN"))
                     editOrDeleteBook(); // 관리자: 수정/삭제 호출
                 else {
-                    // showMyStatus(); // 일반 유저: 대출 현황 호출
-                    System.out.println("[알림] 나의 대출 현황을 확인합니다.");
+                    returnBook(); // 사용자: 반납 기능 개발
                 }
                 break;
 
@@ -620,7 +619,7 @@ public class LibraryMain {
         // 조건 1: 입력한 ID가 존재하는가?
         if (bookMap.containsKey(inputId)) {
             List<Object> targetBook = bookMap.get(inputId);
-            String bookTitle = (String) targetBook.get(1);
+            String bookTitle = (String) targetBook.get(0);
 
             // 조건 2: 해당 도서의 상태값(list.get(2))이 true(대출 가능)인가?
             boolean isAvailable = (boolean) targetBook.get(2);
@@ -641,6 +640,69 @@ public class LibraryMain {
                 // 조건 2가 false인 경우
                 System.out.println("-----------------------------------------------------------");
                 System.out.println("[결과] 이미 대출 중인 도서입니다.");
+            }
+        } else {
+            // 조건 1이 false인 경우
+            System.out.println("[오류] 해당 ID의 도서가 존재하지 않습니다.");
+        }
+    }
+
+    /**
+     * 사용자로부터 도서 ID를 입력받아 도서 반납 처리를 수행하는 메소드입니다.
+     * * <p>이 메소드는 다음과 같은 유효성 검사 및 비즈니스 로직을 따릅니다:</p>
+     * <ul>
+     * <li><b>조건 1 (ID 확인):</b> 입력된 ID가 {@code bookMap}에 등록된 도서인지 확인합니다.</li>
+     * <li><b>조건 2 (상태 확인):</b> 해당 도서의 상태값(index 2)이 {@code false}(대출 중)인지 확인합니다.</li>
+     * <li><b>확인 절차:</b> 반납 가능한 상태일 경우 사용자의 최종 승인(Y/N)을 입력받습니다.</li>
+     * <li><b>데이터 처리:</b> 반납이 승인되면 해당 도서의 상태값을 {@code true}(대출 가능)로 변경합니다.</li>
+     * </ul>
+     * * <p><b>출력 결과:</b></p>
+     * <ul>
+     * <li>반납 성공 시: "[결과] 반납이 완료되었습니다."</li>
+     * <li>이미 반납된 상태일 시: "[결과] 이미 반납된 도서이거나 대출 중이 아닙니다."</li>
+     * <li>ID 미존재 시: "[오류] 해당 ID의 도서가 존재하지 않습니다."</li>
+     * </ul>
+     * @see #bookMap
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/31">Github Issue #31: 도서 반납 기능 개발</a>
+     *
+     * @see LibraryMainTest#returnBook_Success() 도서 반납 성공 테스트: 대출 중인 도서를 반납하고 승인(Y)한 경우
+     * @see LibraryMainTest#returnBook_Cancel() 도서 반납 취소 테스트: 대출 중인 도서이지만 승인을 거절(N)한 경우
+     * @see LibraryMainTest#returnBook_AlreadyReturned() 반납 불가 테스트: 이미 대출 가능 상태인 도서를 반납하려는 경우
+     * @see LibraryMainTest#returnBook_NotFound() 반납 실패 테스트: 존재하지 않는 도서 ID를 입력한 경우
+     */
+    public static void returnBook() {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("[도서 반납]");
+        System.out.print("- 반납할 도서 ID 입력: ");
+        int inputId = sc.nextInt();
+        sc.nextLine(); // 버퍼 비우기
+
+        // 조건 1: 입력한 ID가 존재하는가?
+        if (bookMap.containsKey(inputId)) {
+            List<Object> targetBook = bookMap.get(inputId);
+            String bookTitle = (String) targetBook.get(0);
+
+            // 조건 2: 해당 도서의 상태값(list.get(2))이 false(대출 중)인가?
+            boolean isAvailable = (boolean) targetBook.get(2);
+
+            if (!isAvailable) { // false일 때가 대출 중인 상태
+                System.out.println("-----------------------------------------------------------");
+                System.out.print("[확인] '" + bookTitle + "' 도서를 반납하시겠습니까? (Y/N): ");
+                String confirm = sc.nextLine();
+
+                if (confirm.equalsIgnoreCase("Y")) {
+                    // 처리: 상태값을 true로 변경(list.set(2, true))
+                    targetBook.set(2, true);
+                    System.out.println("[결과] 반납이 완료되었습니다.");
+                } else {
+                    System.out.println("[결과] 반납이 취소되었습니다.");
+                }
+            } else {
+                // 조건 2가 true인 경우 (이미 대출 가능 상태 = 반납할 필요 없음)
+                System.out.println("-----------------------------------------------------------");
+                System.out.println("[결과] 이미 반납된 도서이거나 대출 중이 아닙니다.");
             }
         } else {
             // 조건 1이 false인 경우

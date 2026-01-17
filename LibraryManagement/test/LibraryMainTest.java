@@ -362,4 +362,50 @@ class LibraryMainTest {
         // 결과 검증: 대출을 취소했으므로 상태값은 그대로 true여야 함
         assertTrue((boolean) LibraryMain.bookMap.get(1).get(2));
     }
+
+    @Test
+    @DisplayName("도서 반납 성공 테스트: 대출 중인 도서를 반납하고 승인(Y)한 경우")
+    void returnBook_Success() {
+        // 가상 입력: ID 2 입력 -> 승인 'Y' 입력
+        provideInput("2\nY\n");
+
+        LibraryMain.returnBook();
+
+        // 결과 검증: ID 2번 도서의 상태값(index 2)이 true로 변경되었는지 확인
+        assertTrue((boolean) LibraryMain.bookMap.get(2).get(2));
+    }
+
+    @Test
+    @DisplayName("도서 반납 취소 테스트: 대출 중인 도서이지만 승인을 거절(N)한 경우")
+    void returnBook_Cancel() {
+        // 가상 입력: ID 2 입력 -> 거절 'N' 입력
+        provideInput("2\nN\n");
+
+        LibraryMain.returnBook();
+
+        // 결과 검증: 반납을 취소했으므로 상태값은 여전히 false(대출 중)여야 함
+        assertFalse((boolean) LibraryMain.bookMap.get(2).get(2));
+    }
+
+    @Test
+    @DisplayName("반납 불가 테스트: 이미 대출 가능 상태인 도서를 반납하려는 경우")
+    void returnBook_AlreadyReturned() {
+        // 가상 입력: 이미 대출 가능 상태인 ID 1 입력
+        provideInput("1\n");
+
+        LibraryMain.returnBook();
+
+        // 결과 검증: 상태값은 변화 없이 true여야 함
+        assertTrue((boolean) LibraryMain.bookMap.get(1).get(2));
+    }
+
+    @Test
+    @DisplayName("반납 실패 테스트: 존재하지 않는 도서 ID를 입력한 경우")
+    void returnBook_NotFound() {
+        // 가상 입력: 존재하지 않는 ID 99 입력
+        provideInput("99\n");
+
+        // 예외 없이 메시지만 출력되는지 확인 (상태 변화를 확인할 대상 없음)
+        assertDoesNotThrow(() -> LibraryMain.returnBook());
+    }
 }
