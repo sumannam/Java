@@ -237,8 +237,7 @@ public class LibraryMain {
                 break;
 
             case 3:
-                // listBooks(); // 공통: 전체 목록 조회
-                System.out.println("[알림] 전체 도서 목록을 출력합니다.");
+                listBooks(); // 공통: 전체 목록 조회
                 break;
 
             case 4:
@@ -487,5 +486,48 @@ public class LibraryMain {
                 break;
         }
     }
+
+    /**
+     * 시스템에 등록된 모든 도서 정보를 콘솔에 표(Table) 형식으로 출력합니다.
+     * * <p>이 메서드는 {@link #bookMap}의 모든 데이터를 순회하며 다음 정보를 출력합니다:</p>
+     * <ul>
+     * <li><b>ID:</b> 도서의 고유 번호 (Map의 Key)</li>
+     * <li><b>제목:</b> 도서 명 (ArrayList의 Index 0)</li>
+     * <li><b>저자:</b> 저자 명 (ArrayList의 Index 1)</li>
+     * <li><b>상태:</b> 대출 가능 여부 (ArrayList의 Index 2의 {@code boolean} 값을 문자열로 변환)</li>
+     * </ul>
+     * * <p>출력 형식은 {@code printf}를 사용하여 열 정렬을 수행하며,
+     * 등록된 도서가 없을 경우 "등록된 도서가 없습니다."라는 안내 메시지를 표시합니다.</p>
+     * @see #bookMap
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/24">Github Issue #24: 전체 도서 목록 출력</a>
+     *
+     * @see LibraryMainTest#testListBooksOutput() 단위 테스트: 표 출력 형식 및 데이터 일치 검증
+     */
+    public static void listBooks() {
+        System.out.println("===========================================================");
+        System.out.println(" [도서 목록]");
+        System.out.printf(" %-5s | %-12s | %-10s | %-10s \n", "ID", "제목", "저자", "상태");
+        System.out.println("-----------------------------------------------------------");
+
+        if (bookMap.isEmpty()) {
+            System.out.println("  등록된 도서가 없습니다.");
+        } else {
+            for (Map.Entry<Integer, ArrayList<Object>> entry : bookMap.entrySet()) {
+                Integer id = entry.getKey();
+                ArrayList<Object> info = entry.getValue();
+
+                String title = (String) info.get(0);
+                String author = (String) info.get(1);
+                boolean isAvailable = (boolean) info.get(2);
+                String status = isAvailable ? "대출 가능" : "대출 중";
+
+                // %-Ns: 왼쪽 정렬로 N칸 확보
+                System.out.printf(" %-5d | %-12s | %-10s | %-10s \n", id, title, author, status);
+            }
+        }
+        System.out.println("===========================================================");
+    }
+
 
 }

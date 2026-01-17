@@ -274,4 +274,27 @@ class LibraryMainTest {
         assertEquals(originalTitle, LibraryMain.bookMap.get(1).get(0), "취소 시 제목이 변하지 않아야 합니다.");
         assertTrue(outContent.toString().contains("수정을 취소합니다"));
     }
+
+    @Test
+    @DisplayName("전체 도서 목록 출력 검증")
+    void testListBooksOutput() {
+        // Given: 테스트용 데이터 2건 준비
+        LibraryMain.bookMap.clear();
+        LibraryMain.bookMap.put(1, new ArrayList<>(Arrays.asList("어린왕자", "생텍쥐페리", true)));
+        LibraryMain.bookMap.put(2, new ArrayList<>(Arrays.asList("자바 입문", "김자바", false)));
+
+        // When: 목록 출력 실행
+        LibraryMain.listBooks();
+
+        // Then: 출력된 내용 캡처 및 검증
+        String output = outContent.toString();
+
+        // 헤더 및 구분선 검증
+        assertTrue(output.contains("[도서 목록]"));
+        assertTrue(output.contains("ID") && output.contains("제목") && output.contains("상태"));
+
+        // 데이터 검증
+        assertTrue(output.contains("1") && output.contains("어린왕자") && output.contains("대출 가능"));
+        assertTrue(output.contains("2") && output.contains("자바 입문") && output.contains("대출 중"));
+    }
 }
