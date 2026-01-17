@@ -297,4 +297,27 @@ class LibraryMainTest {
         assertTrue(output.contains("1") && output.contains("어린왕자") && output.contains("대출 가능"));
         assertTrue(output.contains("2") && output.contains("자바 입문") && output.contains("대출 중"));
     }
+
+    @Test
+    @DisplayName("제목 키워드를 통한 도서 검색 검증")
+    void testSearchBookSuccess() {
+        // Given: 테스트 데이터 준비
+        LibraryMain.bookMap.clear();
+        LibraryMain.bookMap.put(1, new ArrayList<>(Arrays.asList("어린왕자", "생텍쥐페리", true)));
+        LibraryMain.bookMap.put(2, new ArrayList<>(Arrays.asList("자바의 정석", "남궁성", true)));
+        LibraryMain.bookMap.put(5, new ArrayList<>(Arrays.asList("Do it! 자바", "박응용", false)));
+
+        // "자바" 키워드 입력 시뮬레이션
+        provideInput("자바\n");
+
+        // When: 검색 실행
+        LibraryMain.searchBook();
+
+        // Then: 출력 내용 확인
+        String output = outContent.toString();
+
+        assertTrue(output.contains("검색 결과 (2건)"), "검색 건수가 일치해야 합니다.");
+        assertTrue(output.contains("자바의 정석") && output.contains("Do it! 자바"));
+        assertFalse(output.contains("어린왕자"), "검색어와 관련 없는 도서는 출력되지 않아야 합니다.");
+    }
 }

@@ -241,8 +241,7 @@ public class LibraryMain {
                 break;
 
             case 4:
-                // searchBook(); // 공통: 도서 검색
-                System.out.println("[알림] 도서 검색 기능을 실행합니다.");
+                searchBook(); // 공통: 도서 검색
                 break;
 
             case 0:
@@ -529,5 +528,65 @@ public class LibraryMain {
         System.out.println("===========================================================");
     }
 
+    /**
+     * 사용자로부터 입력받은 키워드를 도서 제목에서 검색하여 결과를 출력합니다.
+     * * <p>이 메서드의 동작 방식은 다음과 같습니다:</p>
+     * <ol>
+     * <li>사용자에게 검색할 제목의 키워드를 입력받습니다.</li>
+     * <li>입력된 키워드가 빈 문자열인 경우 안내 메시지를 출력하고 종료합니다.</li>
+     * <li>{@link #bookMap}의 모든 데이터를 순회하며 {@link String#contains(CharSequence)}를 사용하여 제목에 키워드가 포함되었는지 확인합니다.</li>
+     * <li>매칭되는 도서의 ID를 별도의 리스트({@code foundIds})에 수집합니다.</li>
+     * <li>검색된 총 건수와 도서 상세 정보를 표 형식으로 출력합니다.</li>
+     * </ol>
+     * * <p>출력되는 도서 상태는 {@code boolean} 값에 따라 다음과 같이 변환됩니다:</p>
+     * <ul>
+     * <li>{@code true}: 대출 가능</li>
+     * <li>{@code false}: 대출 중</li>
+     * </ul>
+     * * @see #bookMap
+     * @see #listBooks() 출력 형식의 일관성을 위해 동일한 포맷팅 사용
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/26">Github Issue #26: 도서 검색 기능 개발</a>
+     *
+     * @see LibraryMainTest#testSearchBookSuccess() 단위 테스트: 키워드 검색 및 필터링 결과 검증
+     */
+    public static void searchBook() {
+        System.out.println("\n[도서 검색]");
+        System.out.print("- 검색할 제목 키워드 입력: ");
+        String keyword = sc.nextLine().trim();
+
+        if (keyword.isEmpty()) {
+            System.out.println("[알림] 검색어를 입력해주세요.");
+            return;
+        }
+
+        // 결과를 임시로 담을 리스트 (건수 확인을 위해 필요)
+        ArrayList<Integer> foundIds = new ArrayList<>();
+        for (Map.Entry<Integer, ArrayList<Object>> entry : bookMap.entrySet()) {
+            String title = (String) entry.getValue().get(0);
+            if (title.contains(keyword)) {
+                foundIds.add(entry.getKey());
+            }
+        }
+
+        System.out.println("-----------------------------------------------------------");
+        System.out.printf(" 검색 결과 (%d건)\n", foundIds.size());
+        System.out.printf(" %-5s | %-12s | %-10s | %-10s \n", "ID", "제목", "저자", "상태");
+        System.out.println("-----------------------------------------------------------");
+
+        if (foundIds.isEmpty()) {
+            System.out.println("  검색 결과가 없습니다.");
+        } else {
+            for (int id : foundIds) {
+                ArrayList<Object> info = bookMap.get(id);
+                String title = (String) info.get(0);
+                String author = (String) info.get(1);
+                String status = (boolean) info.get(2) ? "대출 가능" : "대출 중";
+
+                System.out.printf(" %-5d | %-12s | %-10s | %-10s \n", id, title, author, status);
+            }
+        }
+        System.out.println("-----------------------------------------------------------");
+    }
 
 }
