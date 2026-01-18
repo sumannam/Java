@@ -6,6 +6,9 @@ public class LibraryMain {
     static int bookCount = 0; // 고유 ID 생성을 위한 카운트 변수
     static Scanner sc = new Scanner(System.in);
 
+    static String loginId = "";
+    static String currentRole = "";
+
     private static final String usersFile = "data/users.csv";
     private static final String booksFile = "data/books.csv";
 
@@ -17,7 +20,7 @@ public class LibraryMain {
         boolean isRunning = true;
 
         //String currentRole = login();
-        String currentRole = "USER";
+        loginId = "user";
         System.out.println("로그인 성공! 권한: " + currentRole);
 
         loadBooksFromCSV();
@@ -25,12 +28,12 @@ public class LibraryMain {
         while (isRunning)
         {
             int choice = -9;
-            if ( currentRole.equals(ADMIN) )
+            if ( currentRole.equals(ADMIN) & loginId.equals("admin") )
             {
                 showAdminMenu();
                 choice = restart(ADMIN);
             }
-            else if ( currentRole.equals(USER) )
+            else
             {
                 showUserMenu();
                 choice = restart(USER);
@@ -74,20 +77,23 @@ public class LibraryMain {
                 // 빈 줄 건너뛰기
                 if (line.trim().isEmpty()) continue;
 
-                // CSV 데이터 분리 (ID, 제목, 저자, 대출여부)
+                // CSV 데이터 분리 (ID, 제목, 저자, 대출여부, 대출한 사용자)
                 String[] data = line.split(",");
-                if (data.length < 4) continue; // 데이터 형식이 맞지 않으면 건너뜀
+                if (data.length < 5)
+                    continue; // 데이터 형식이 맞지 않으면 건너뜀
 
                 int id = Integer.parseInt(data[0].trim());
                 String title = data[1].trim();
                 String author = data[2].trim();
                 boolean isAvailable = Boolean.parseBoolean(data[3].trim());
+                String memberId = data[4].trim();
 
                 // 메모리에 복구
                 ArrayList<Object> bookInfo = new ArrayList<>();
                 bookInfo.add(title);
                 bookInfo.add(author);
                 bookInfo.add(isAvailable);
+                bookInfo.add(memberId);
 
                 bookMap.put(id, bookInfo);
 
@@ -139,6 +145,7 @@ public class LibraryMain {
 
             boolean isSuccess = false;
             String role = "";
+            String userId = "";
 
             // 파일 읽기 시작
             try (BufferedReader br = new BufferedReader(new FileReader(usersFile))) {
@@ -155,6 +162,7 @@ public class LibraryMain {
                     // 입력한 정보와 파일 정보가 일치하는지 확인
                     if (fileId.equals(inputId) && filePw.equals(inputPw)) {
                         isSuccess = true;
+                        userId = fileId;
                         role = fileRole;
                         break; // 일치하는 정보를 찾았으므로 더 이상 읽지 않음
                     }
@@ -169,7 +177,8 @@ public class LibraryMain {
             if (isSuccess)
             {
                 System.out.println("=> [" + role + "] 권한으로 로그인되었습니다.");
-                return role; // "ADMIN" 또는 "USER" 반환
+                currentRole = role;
+                return userId;
             }
             else
             {
@@ -179,7 +188,12 @@ public class LibraryMain {
     }
 
     /**
-     * 관리자 전용 메뉴 출력
+     * 관리자 전용 메뉴를 콘솔에 출력합니다.
+     * <p>도서의 등록, 수정, 삭제와 같은 관리 권한이 필요한 메뉴를 제공하며,
+     * 마지막에 모든 권한 공통 메뉴를 포함하여 출력합니다.</p>
+     * @see #showCommonMenu() 공통 메뉴 출력 메소드
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/13">Github Issue #13: 관리자 메뉴 출력</a>
      */
     public static void showAdminMenu()
     {
@@ -192,7 +206,12 @@ public class LibraryMain {
     }
 
     /**
-     * 일반 사용자 전용 메뉴 출력
+     * 일반 사용자 전용 메뉴를 콘솔에 출력합니다.
+     * <p>도서의 대출 및 반납과 같은 일반적인 이용 메뉴를 제공하며,
+     * 마지막에 모든 권한 공통 메뉴를 포함하여 출력합니다.</p>
+     * @see #showCommonMenu() 공통 메뉴 출력 메소드
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/14">Github Issue #14: 사용자 메뉴 출력</a>
      */
     public static void showUserMenu()
     {
@@ -201,16 +220,19 @@ public class LibraryMain {
         System.out.println("===========================================================");
         System.out.println("  1. 도서 대출 (Borrow)");
         System.out.println("  2. 도서 반납 (Return)");
+        System.out.println("  3. 대출 현황 보기 (Status)");
         showCommonMenu(); // 공통 메뉴 호출
     }
 
     /**
-     * 모든 사용자가 공통으로 사용하는 메뉴 출력
+     * 모든 사용자가 권한에 관계없이 공통으로 사용하는 메뉴 항목을 출력합니다.
+     * <p>이 메소드는 {@link #showAdminMenu()} 및 {@link #showUserMenu()} 내부에서
+     * 호출되어 메뉴 하단의 공통 기능(조회, 검색, 종료)을 일관성 있게 표시합니다.</p>
      */
     private static void showCommonMenu()
     {
-        System.out.println("  3. 전체 도서 목록 (List)");
-        System.out.println("  4. 도서 검색 (Search)");
+        System.out.println("  5. 전체 도서 목록 (List)");
+        System.out.println("  6. 도서 검색 (Search)");
         System.out.println("  0. 종료 (Exit)");
         System.out.println("-----------------------------------------------------------");
     }
@@ -238,10 +260,14 @@ public class LibraryMain {
                 break;
 
             case 3:
+                showLoanStatus(); // 사용자: 대출 현황 보기
+                break;
+
+            case 5:
                 listBooks(); // 공통: 전체 목록 조회
                 break;
 
-            case 4:
+            case 6:
                 searchBook(); // 공통: 도서 검색
                 break;
 
@@ -369,11 +395,12 @@ public class LibraryMain {
                 ArrayList<Object> info = entry.getValue();
 
                 // CSV 형식: ID,제목,저자,대출여부
-                String line = String.format("%d,%s,%s,%b",
+                String line = String.format("%d,%s,%s,%b,%s",
                         id,
                         info.get(0), // 제목
                         info.get(1), // 저자
-                        info.get(2)  // 대출여부 (true/false)
+                        info.get(2),  // 대출여부 (true/false)
+                        info.get(3)  // 대출한 사용자
                 );
 
                 bw.write(line);
@@ -604,45 +631,45 @@ public class LibraryMain {
      *
      * @see <a href="https://github.com/sumannam/Java/issues/28">Github Issue #28: 도서 대출 기능 개발</a>
      *
-     * @see LibraryMainTest#borrowBook_Success() 단위 테스트: 도서 대출 성공 테스트: ID 존재 및 대출 가능 상태
-     * @see LibraryMainTest#borrowBook_AlreadyBorrowed() 단위 테스트: 도서 대출 실패 테스트: 이미 대출 중인 경우
-     * @see LibraryMainTest#borrowBook_Cancel() 단위 테스트: 도서 대출 취소 테스트: 사용자가 'N'을 선택한 경우
+     * @see LibraryMainTest#borrowBook_Success() 도서 대출 성공 테스트: ID 존재 및 대출 가능 상태
+     * @see LibraryMainTest#borrowBook_AlreadyBorrowed() 도서 대출 실패 테스트: 이미 대출 중인 경우
+     * @see LibraryMainTest#borrowBook_Cancel() 도서 대출 취소 테스트: 사용자가 'N'을 선택한 경우
+     * @see LibraryMainTest#borrowBook_InvalidId() 도서 대출 취소 테스트: 도서 대출 실패 테스트: 존재하지 않는 ID를 입력한 경우
      */
-    public static void borrowBook() {
+    public static void borrowBook()
+    {
         Scanner sc = new Scanner(System.in);
 
         System.out.println("[도서 대출]");
         System.out.print("- 대출할 도서 ID 입력: ");
+
+        // 1. 도서 ID 입력 받기
+        if (!sc.hasNextInt()) {
+            System.out.println("[오류] 숫자 형식의 ID를 입력해주세요.");
+            sc.nextLine(); // 버퍼 비우기
+            return;
+        }
         int inputId = sc.nextInt();
         sc.nextLine(); // 버퍼 비우기
 
-        // 조건 1: 입력한 ID가 존재하는가?
+        // 2. 조건 확인 및 처리
         if (bookMap.containsKey(inputId)) {
             List<Object> targetBook = bookMap.get(inputId);
-            String bookTitle = (String) targetBook.get(0);
-
-            // 조건 2: 해당 도서의 상태값(list.get(2))이 true(대출 가능)인가?
             boolean isAvailable = (boolean) targetBook.get(2);
 
             if (isAvailable) {
-                System.out.println("-----------------------------------------------------------");
-                System.out.print("[확인] '" + bookTitle + "' 도서를 대출하시겠습니까? (Y/N): ");
-                String confirm = sc.nextLine();
+                // 즉시 대출 처리 (확인 질문 생략)
+                targetBook.set(2, false);    // 상태: 대출 중
+                targetBook.set(3, loginId);  // 대출자 ID 자동 저장
 
-                if (confirm.equalsIgnoreCase("Y")) {
-                    // 처리: 상태값을 false로 변경(list.set(2, false))
-                    targetBook.set(2, false);
-                    System.out.println("[결과] 대출되었습니다.");
-                } else {
-                    System.out.println("[결과] 대출이 취소되었습니다.");
-                }
-            } else {
-                // 조건 2가 false인 경우
                 System.out.println("-----------------------------------------------------------");
-                System.out.println("[결과] 이미 대출 중인 도서입니다.");
+                System.out.println("[결과] '" + targetBook.get(0) + "' 도서 대출이 완료되었습니다.");
+                System.out.println("(대출자: " + loginId + ")");
+            } else {
+                System.out.println("-----------------------------------------------------------");
+                System.out.println("[결과] 이미 대출 중인 도서입니다. (대출자: " + targetBook.get(3) + ")");
             }
         } else {
-            // 조건 1이 false인 경우
             System.out.println("[오류] 해당 ID의 도서가 존재하지 않습니다.");
         }
     }
@@ -671,43 +698,89 @@ public class LibraryMain {
      * @see LibraryMainTest#returnBook_AlreadyReturned() 반납 불가 테스트: 이미 대출 가능 상태인 도서를 반납하려는 경우
      * @see LibraryMainTest#returnBook_NotFound() 반납 실패 테스트: 존재하지 않는 도서 ID를 입력한 경우
      */
-    public static void returnBook() {
+    public static void returnBook()
+    {
         Scanner sc = new Scanner(System.in);
 
         System.out.println("[도서 반납]");
         System.out.print("- 반납할 도서 ID 입력: ");
         int inputId = sc.nextInt();
-        sc.nextLine(); // 버퍼 비우기
+        sc.nextLine();
 
-        // 조건 1: 입력한 ID가 존재하는가?
         if (bookMap.containsKey(inputId)) {
             List<Object> targetBook = bookMap.get(inputId);
             String bookTitle = (String) targetBook.get(0);
-
-            // 조건 2: 해당 도서의 상태값(list.get(2))이 false(대출 중)인가?
             boolean isAvailable = (boolean) targetBook.get(2);
+            String borrowerId = (String) targetBook.get(3);
 
-            if (!isAvailable) { // false일 때가 대출 중인 상태
+            if (!isAvailable) { // 대출 중인 상태 (false)
                 System.out.println("-----------------------------------------------------------");
-                System.out.print("[확인] '" + bookTitle + "' 도서를 반납하시겠습니까? (Y/N): ");
-                String confirm = sc.nextLine();
+                System.out.print("[확인] '" + borrowerId + "'님이 대출 중인 '" + bookTitle + "' 도서를 반납하시겠습니까? (Y/N): ");
 
-                if (confirm.equalsIgnoreCase("Y")) {
-                    // 처리: 상태값을 true로 변경(list.set(2, true))
-                    targetBook.set(2, true);
+                if (sc.nextLine().equalsIgnoreCase("Y")) {
+                    targetBook.set(2, true);  // 상태: 대출 가능
+                    targetBook.set(3, null);  // 대출자 ID를 null로 초기화
                     System.out.println("[결과] 반납이 완료되었습니다.");
-                } else {
-                    System.out.println("[결과] 반납이 취소되었습니다.");
                 }
             } else {
-                // 조건 2가 true인 경우 (이미 대출 가능 상태 = 반납할 필요 없음)
-                System.out.println("-----------------------------------------------------------");
-                System.out.println("[결과] 이미 반납된 도서이거나 대출 중이 아닙니다.");
+                System.out.println("[결과] 대출 중인 도서가 아닙니다.");
             }
         } else {
-            // 조건 1이 false인 경우
             System.out.println("[오류] 해당 ID의 도서가 존재하지 않습니다.");
         }
+    }
+
+    /**
+     * 메모리 내 {@code bookMap}에 저장된 모든 도서 데이터를 CSV 파일로 저장합니다.
+     * * <p>이 메소드는 {@link java.util.ArrayList}의 각 인덱스 데이터를 다음과 같은 CSV 형식으로 변환하여 기록합니다:</p>
+     * <ul>
+     * <li><b>형식:</b> ID,도서명,저자,대출가능여부,대출자ID</li>
+     * <li><b>데이터 맵핑:</b>
+     * <ul>
+     * <li>{@code index 0}: 도서명 (String)</li>
+     * <li>{@code index 1}: 저자 (String)</li>
+     * <li>{@code index 2}: 대출 가능 여부 (Boolean)</li>
+     * <li>{@code index 3}: 대출자 ID (String, 대출 중이 아닐 경우 "null")</li>
+     * </ul>
+     * </li>
+     * </ul>
+     * * <p><b>파일 처리:</b> {@link java.io.BufferedWriter}와 {@link java.io.FileWriter}를 사용하여
+     * 파일 쓰기 성능을 최적화하며, 저장 완료 후 자동으로 자원을 해제합니다.</p>
+     * * @param filePath 저장할 CSV 파일의 전체 경로 또는 파일명
+     * @see #bookMap
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/30">Github Issue #31: 사용자별 대출 현황 기능 개발</a>
+     *
+     * @see LibraryMainTest#verifyLoanDataInArrayList() 대출 현황 데이터 검증: ArrayList 내의 상태값과 대출자 정보 체크
+     */
+    public static void showLoanStatus() {
+        System.out.println("===========================================================");
+        System.out.println("                [ 현재 도서 대출 현황 ]");
+        System.out.println("===========================================================");
+        System.out.printf("%-5s | %-20s | %-10s%n", "ID", "도서명", "대출자");
+        System.out.println("-----------------------------------------------------------");
+
+        boolean hasBorrowedBooks = false;
+
+        // Map의 키(ID)를 정렬하여 출력하기 위해 TreeMap 등을 사용할 수 있으나, 여기서는 일반 순회 수행
+        for (Integer id : bookMap.keySet()) {
+            List<Object> targetBook = bookMap.get(id);
+            boolean isAvailable = (boolean) targetBook.get(2);
+
+            // 조건: 상태값이 false(대출 중)인 경우만 출력
+            if (!isAvailable) {
+                String bookTitle = (String) targetBook.get(0);
+                String borrowerId = (String) targetBook.get(3);
+
+                System.out.printf("%-5d | %-20s | %-10s%n", id, bookTitle, borrowerId);
+                hasBorrowedBooks = true;
+            }
+        }
+
+        if (!hasBorrowedBooks) {
+            System.out.println("   현재 대출 중인 도서가 없습니다.");
+        }
+        System.out.println("===========================================================");
     }
 
 }

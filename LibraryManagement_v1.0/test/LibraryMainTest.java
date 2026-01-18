@@ -14,6 +14,8 @@ class LibraryMainTest {
     // 콘솔 출력을 캡처하기 위한 스트림 변수
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
+    private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
+
 
     private final String TEST_FILE_PATH = "data/books_test.csv";
 
@@ -32,18 +34,17 @@ class LibraryMainTest {
             }
             file.createNewFile();
 
-            LibraryMain.bookMap.clear();
-
             // 테스트 데이터 준비
             LibraryMain.bookMap.clear();
 
-            ArrayList<Object> book1 = new ArrayList<>(Arrays.asList("어린왕자", "생텍쥐페리", true));
-            ArrayList<Object> book2 = new ArrayList<>(Arrays.asList("자바의 정석", "남궁성", false));
+            ArrayList<Object> book1 = new ArrayList<>(Arrays.asList("어린왕자", "생텍쥐페리", true, "null"));
+            ArrayList<Object> book2 = new ArrayList<>(Arrays.asList("자바의 정석", "남궁성", false, "user"));
 
             LibraryMain.bookMap.put(1, book1);
             LibraryMain.bookMap.put(2, book2);
-
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             // 테스트 환경 구축 실패 시 강제로 테스트 실패 처리
             org.junit.jupiter.api.Assertions.fail("파일 생성 중 오류 발생: " + e.getMessage());
         }
@@ -83,7 +84,7 @@ class LibraryMainTest {
         provideInput(input);
 
         String result = LibraryMain.login();
-        assertEquals("ADMIN", result);
+        assertEquals("admin", result);
     }
 
     @Test
@@ -93,7 +94,7 @@ class LibraryMainTest {
         provideInput(input);
 
         String result = LibraryMain.login();
-        assertEquals("USER", result);
+        assertEquals("user", result);
     }
 
     @Test
@@ -134,8 +135,8 @@ class LibraryMainTest {
 
         // [검증] 핵심 메뉴 키워드들이 포함되어 있는지 확인
         assertTrue(output.contains("[ 일반 사용자 메뉴 ]"));
-        assertTrue(output.contains("3. 전체 도서 목록 (List)"));
-        assertTrue(output.contains("4. 도서 검색 (Search)"));
+        assertTrue(output.contains("5. 전체 도서 목록 (List)"));
+        assertTrue(output.contains("6. 도서 검색 (Search)"));
         assertTrue(output.contains("0. 종료 (Exit)"));
     }
 
@@ -189,10 +190,10 @@ class LibraryMainTest {
             // Map은 순서가 보장되지 않을 수 있으므로 포함 여부로 체크하거나
             // 정렬된 상태라면 직접 비교합니다.
             assertNotNull(line1);
-            assertTrue(line1.contains("1,어린왕자,생텍쥐페리,true") || line1.contains("2,자바의 정석,남궁성,false"));
+            assertTrue(line1.contains("1,어린왕자,생텍쥐페리,true,null") || line1.contains("2,자바의 정석,남궁성,false,user"));
 
             assertNotNull(line2);
-            assertTrue(line2.contains("2,자바의 정석,남궁성,false") || line2.contains("1,어린왕자,생텍쥐페리,true"));
+            assertTrue(line2.contains("2,자바의 정석,남궁성,false,user") || line2.contains("1,어린왕자,생텍쥐페리,true,null"));
         }
     }
 
@@ -335,32 +336,33 @@ class LibraryMainTest {
     }
 
     @Test
-    @DisplayName("도서 대출 실패 테스트: 이미 대출 중인 경우")
+    @DisplayName("도서 대출 실패 테스트: 이미 대출 중인 도서를 선택한 경우")
     void borrowBook_AlreadyBorrowed() {
-        // 이미 대출 중인 상태로 설정
-        LibraryMain.bookMap.get(2).set(2, false);
-
-        // 가상 입력 설정: ID 2 입력
+        // 1. 가상 입력 설정: 이미 대출 중인 '자바의 정석'(ID 2) 입력
+        // 현재 코드에는 Y/N 입력이 없으므로 ID만 입력합니다.
         String input = "2\n";
         provideInput(input);
 
+        // 2. 대출 메소드 실행
         LibraryMain.borrowBook();
 
-        // 결과 검증: 상태값은 그대로 false여야 함
+        // 3. 결과 검증:
+        // 이미 대출 중(false)이었으므로, 상태값은 변함없이 false여야 합니다.
         assertFalse((boolean) LibraryMain.bookMap.get(2).get(2));
+
+        // 대출자도 기존 대출자인 "user" 그대로 유지되어야 합니다.
+        assertEquals("user", (String) LibraryMain.bookMap.get(2).get(3));
     }
 
     @Test
-    @DisplayName("도서 대출 취소 테스트: 사용자가 'N'을 선택한 경우")
-    void borrowBook_Cancel() {
-        // 가상 입력 설정: ID 1 입력 후, 취소 대답 'N' 입력
-        String input = "1\nN\n";
+    @DisplayName("도서 대출 실패 테스트: 존재하지 않는 ID를 입력한 경우")
+    void borrowBook_InvalidId() {
+        // 1. 가상 입력 설정: 존재하지 않는 ID 999 입력
+        String input = "999\n";
         provideInput(input);
 
-        LibraryMain.borrowBook();
-
-        // 결과 검증: 대출을 취소했으므로 상태값은 그대로 true여야 함
-        assertTrue((boolean) LibraryMain.bookMap.get(1).get(2));
+        // 2. 실행 및 검증 (에러 없이 종료되는지 확인)
+        assertDoesNotThrow(() -> LibraryMain.borrowBook());
     }
 
     @Test
@@ -407,5 +409,29 @@ class LibraryMainTest {
 
         // 예외 없이 메시지만 출력되는지 확인 (상태 변화를 확인할 대상 없음)
         assertDoesNotThrow(LibraryMain::returnBook);
+    }
+
+    @Test
+    @DisplayName("대출 현황 데이터 검증: ArrayList 내의 상태값과 대출자 정보 체크")
+    void verifyLoanDataInArrayList() {
+        // 1. [준비] setUp 데이터 (ID 1: 어린왕자/true, ID 2: 자바의 정석/false)
+
+        // 2. [검증] ID 2번(자바의 정석) 데이터 체크
+        ArrayList<Object> book2 = LibraryMain.bookMap.get(2);
+
+        // 상태값이 false(대출 중)인지 확인
+        assertFalse((boolean) book2.get(2), "ID 2번은 반드시 대출 중(false)이어야 합니다.");
+
+        // 대출자가 "user"인지 확인
+        assertEquals("user", book2.get(3), "ID 2번의 대출자 ID가 'user'여야 합니다.");
+
+        // 3. [검증] ID 1번(어린왕자) 데이터 체크
+        ArrayList<Object> book1 = LibraryMain.bookMap.get(1);
+
+        // 상태값이 true(대출 가능)인지 확인
+        assertTrue((boolean) book1.get(2), "ID 1번은 대출 가능(true) 상태여야 합니다.");
+
+        // 대출자가 "null" 문자열인지 확인
+        assertEquals("null", book1.get(3));
     }
 }
