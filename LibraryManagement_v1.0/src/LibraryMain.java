@@ -19,8 +19,8 @@ public class LibraryMain {
     {
         boolean isRunning = true;
 
-        //String currentRole = login();
-        loginId = "user";
+        String loginId = login();
+//        loginId = "user";
         System.out.println("로그인 성공! 권한: " + currentRole);
 
         loadBooksFromCSV();
@@ -329,6 +329,7 @@ public class LibraryMain {
         bookInfo.add(title);   // index 0: 제목
         bookInfo.add(author);  // index 1: 저자
         bookInfo.add(true);    // index 2: 대출 가능 여부 (true = 가능)
+        bookInfo.add("null");  // index 3: 대출 사용자
 
         // [처리] Map.put(book_id, list)
         bookMap.put(book_id, bookInfo);
