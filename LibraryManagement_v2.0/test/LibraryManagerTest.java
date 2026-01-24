@@ -56,19 +56,20 @@ class LibraryManagerTest {
 
         assertEquals(beforeSize + 1, manager.getAllBooks().size());
 
-        int size = manager.getAllBooks().size();
-        Book book = manager.getBookMap().get(size);
-        assertEquals("테스트 자바", book.getTitle());
+        int target_id = manager.getBookCount();
+        Book book = manager.getBookMap().get(target_id);
+        assertEquals("새로운 책", book.getTitle());
     }
 
     @Test
     @DisplayName("도서 삭제 확인")
     void deleteBook() {
         // ID 1번 도서 삭제
-        boolean result = manager.deleteBook(1);
+        int target_id = manager.getBookCount();
+        boolean result = manager.deleteBook(target_id);
 
-        //assertTrue(result);
-        assertNull(manager.getBookMap().get(1));
+        assertTrue(result);
+        assertNull(manager.getBookMap().get(target_id));
     }
 
     @Test
@@ -77,10 +78,11 @@ class LibraryManagerTest {
         manager.login("user", "2222"); // 대출자 로그인
 
         // 성공 케이스
-        boolean success = manager.borrowBook(1);
-        //assertTrue(success);
-        //assertFalse(manager.getBookMap().get(1).isAvailable());
-        //assertEquals("user", manager.getBookMap().get(1).getBorrowerId());
+        int target_id = manager.getBookCount();
+        boolean success = manager.borrowBook(target_id);
+        assertTrue(success);
+        assertFalse(manager.getBookMap().get(target_id).isAvailable());
+        assertEquals("user", manager.getBookMap().get(target_id).getBorrowerId());
 
         // 실패 케이스 (이미 대출 중인 도서)
         boolean fail = manager.borrowBook(1);
@@ -94,10 +96,13 @@ class LibraryManagerTest {
         manager.borrowBook(2); // 먼저 대출
 
         // 반납 실행
-        boolean result = manager.returnBook(2);
+        int target_id = manager.getBookCount();
+        manager.borrowBook(target_id);
+
+        boolean result = manager.returnBook(target_id);
         assertTrue(result);
-        // assertTrue(manager.getBookMap().get(1).isAvailable());
-        //assertEquals("null", manager.getBookMap().get(1).getBorrowerId());
+        assertTrue(manager.getBookMap().get(target_id).isAvailable());
+        assertEquals("null", manager.getBookMap().get(target_id).getBorrowerId());
     }
 
     @Test

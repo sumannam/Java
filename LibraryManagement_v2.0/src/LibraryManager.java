@@ -51,7 +51,9 @@ public class LibraryManager {
     }
 
     public boolean borrowBook(int id) {
-        if (!bookMap.containsKey(id)) return false;
+        if (!bookMap.containsKey(id))
+            return false;
+
         Book book = bookMap.get(id);
         if (book.isAvailable()) {
             book.setAvailable(false);
@@ -62,7 +64,9 @@ public class LibraryManager {
     }
 
     public boolean returnBook(int id) {
-        if (!bookMap.containsKey(id)) return false;
+        if (!bookMap.containsKey(id))
+            return false;
+
         Book book = bookMap.get(id);
         if (!book.isAvailable()) {
             book.setAvailable(true);
@@ -81,6 +85,8 @@ public class LibraryManager {
     }
 
     public Collection<Book> getAllBooks() { return bookMap.values(); }
+
+    public int getBookCount() { return bookCount; }
 
     public void saveChanges() { repository.saveBooks(bookMap); }
 
