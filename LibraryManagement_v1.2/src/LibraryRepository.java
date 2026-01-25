@@ -1,60 +1,111 @@
-import java.io.*;
+import java.sql.*;
 import java.util.*;
 
 public class LibraryRepository {
-    private final String booksFile = "data/books.csv";
-    private final String usersFile = "data/users.csv";
+    // DB 연결 정보
+    private final String URL = "jdbc:mariadb://192.168.100.20:3306/library";
+    private final String USER = "cjulib";
+    private final String PASSWORD = "security";
 
+    /**
+     * MariaDB 연결을 위한 전용 메소드
+     */
+    private Connection getConnection() throws SQLException {
+        try {
+            Class.forName("org.mariadb.jdbc.Driver"); //
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("드라이버 로드 실패: " + e.getMessage());
+        }
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    /**
+     * [추가] 메모리의 모든 도서 정보를 MariaDB에 저장(동기화)합니다.
+     * CSV의 '전체 저장' 기능을 DB의 Upsert 로직으로 변환한 것입니다.
+     */
+    public void saveBooks(Map<Integer, Book> bookMap) {
+        // 중복된 ID가 있으면 업데이트, 없으면 삽입하는 MariaDB 쿼리
+        String sql = "INSERT INTO books (book_id, title, author, is_available, member_id) " +
+                "VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "title = VALUES(title), " +
+                "author = VALUES(author), " +
+                "is_available = VALUES(is_available), " +
+                "member_id = VALUES(member_id)";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            // 성능 최적화를 위한 배치(Batch) 처리
+            for (Book book : bookMap.values()) {
+                pstmt.setInt(1, book.getId());
+                pstmt.setString(2, book.getTitle());
+                pstmt.setString(3, book.getAuthor());
+                pstmt.setBoolean(4, book.isAvailable());
+
+                // 대출자가 "null" 문자열인 경우 DB 실제 NULL로 처리
+                if (book.getBorrowerId() == null || "null".equals(book.getBorrowerId())) {
+                    pstmt.setNull(5, java.sql.Types.VARCHAR);
+                } else {
+                    pstmt.setString(5, book.getBorrowerId());
+                }
+                pstmt.addBatch(); // 대기열에 추가
+            }
+
+            pstmt.executeBatch(); // 한 번에 실행
+            System.out.println("[시스템] 모든 도서 데이터가 MariaDB에 동기화되었습니다.");
+
+        } catch (SQLException e) {
+            System.err.println("[오류] DB 저장(saveBooks) 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * DB로부터 모든 도서 데이터를 로드합니다.
+     */
     public Map<Integer, Book> loadBooks() {
         Map<Integer, Book> bookMap = new HashMap<>();
-        File file = new File(booksFile);
-        if (!file.exists()) return bookMap;
+        String sql = "SELECT * FROM books";
 
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                String[] data = line.split(",");
-                if (data.length < 5) continue;
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
 
-                int id = Integer.parseInt(data[0].trim());
-                String title = data[1].trim();
-                String author = data[2].trim();
-                boolean isAvailable = Boolean.parseBoolean(data[3].trim());
-                String memberId = data[4].trim();
+            while (rs.next()) {
+                int id = rs.getInt("book_id");
+                String title = rs.getString("title");
+                String author = rs.getString("author");
+                boolean available = rs.getBoolean("is_available");
+                String mid = rs.getString("member_id");
 
-                bookMap.put(id, new Book(id, title, author, isAvailable, memberId));
+                bookMap.put(id, new Book(id, title, author, available, mid == null ? "null" : mid));
             }
-        } catch (IOException e) {
-            System.out.println("[오류] 도서 로딩 실패: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("[오류] 로드 실패: " + e.getMessage());
         }
         return bookMap;
     }
 
-    public void saveBooks(Map<Integer, Book> bookMap) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(booksFile))) {
-            for (Book book : bookMap.values()) {
-                String line = String.format("%d,%s,%s,%b,%s",
-                        book.getId(), book.getTitle(), book.getAuthor(),
-                        book.isAvailable(), book.getBorrowerId());
-                bw.write(line);
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            System.out.println("[오류] 도서 저장 실패: " + e.getMessage());
-        }
-    }
-
+    /**
+     * DB로부터 사용자 목록을 로드합니다.
+     */
     public List<User> loadUsers() {
         List<User> userList = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(usersFile))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
-                userList.add(new User(data[0].trim(), data[1].trim(), data[2].trim()));
+        String sql = "SELECT * FROM users";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                userList.add(new User(
+                        rs.getString("user_id"),
+                        rs.getString("password"),
+                        rs.getString("type")
+                ));
             }
-        } catch (IOException e) {
-            System.out.println("[오류] 사용자 데이터 로딩 실패.");
+        } catch (SQLException e) {
+            System.err.println("[오류] 사용자 로드 실패: " + e.getMessage());
         }
         return userList;
     }
