@@ -4,7 +4,7 @@ import java.sql.SQLException;
 
 public class DBconn {
     // 연결 정보 설정
-    private static final String URL = "jdbc:mariadb://192.168.100.20:3306";
+    private static final String URL = "jdbc:mariadb://192.168.100.20:3306/library";
     private static final String USER = "cjulib";
     private static final String PASSWORD = "security";
 
