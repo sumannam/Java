@@ -13,7 +13,6 @@ public class LibraryManager {
 
     public void initialize() {
         this.bookMap = repository.loadBooks();
-        this.userList = repository.loadUsers();
         // ID 카운트 동기화
         for (Integer id : bookMap.keySet()) {
             if (id > bookCount) bookCount = id;
@@ -21,11 +20,13 @@ public class LibraryManager {
     }
 
     public boolean login(String id, String pw) {
-        for (User user : userList) {
-            if (user.getUserId().equals(id) && user.getPassword().equals(pw)) {
-                this.currentUser = user;
-                return true;
-            }
+        // 기존에 List<String>으로 받던 부분을 User로 변경
+//        this.userList = repository.loadLogin(id, pw);
+        User user = repository.loadUser(id, pw);
+
+        if (user != null) {
+            this.currentUser = user; // 로그인 성공 시 현재 사용자 저장
+            return true;
         }
         return false;
     }

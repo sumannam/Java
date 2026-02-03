@@ -1,5 +1,6 @@
 import java.sql.*;
 import java.util.*;
+import java.util.List;
 
 public class LibraryRepository {
     // DB 연결 정보
@@ -89,24 +90,30 @@ public class LibraryRepository {
     /**
      * DB로부터 사용자 목록을 로드합니다.
      */
-    public List<User> loadUsers() {
-        List<User> userList = new ArrayList<>();
-        String sql = "SELECT * FROM users";
+    public User loadUser(String id, String pw) {
+        //String sql = "SELECT * FROM users WHERE user_id = ? AND password = ?";
+        String sql = "SELECT * FROM users WHERE user_id = '" + id + "' AND password = '" + pw + "'";
+        //System.out.println(sql);
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                userList.add(new User(
-                        rs.getString("user_id"),
-                        rs.getString("password"),
-                        rs.getString("type")
-                ));
+            pstmt.setString(1, id);
+            pstmt.setString(2, pw);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    // 반환 타입이 User로 바뀌었으므로 이제 에러 없이 정상 작동합니다.
+                    return new User(
+                            rs.getString("user_id"),
+                            rs.getString("password"),
+                            rs.getString("type")
+                    );
+                }
             }
         } catch (SQLException e) {
-            System.err.println("[오류] 사용자 로드 실패: " + e.getMessage());
+            System.err.println("[오류] 로그인 조회 실패: " + e.getMessage());
         }
-        return userList;
+        return null; // 일치하는 사용자가 없을 때
     }
 }

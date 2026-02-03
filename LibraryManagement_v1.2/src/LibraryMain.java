@@ -9,7 +9,8 @@ public class LibraryMain {
         manager = new LibraryManager(repo);
         manager.initialize();
 
-        if (!performLogin()) return;
+        if (!performLogin())
+            return;
 
         User user = manager.getCurrentUser();
         System.out.println("로그인 성공! 권한: " + user.getRole());
@@ -108,6 +109,9 @@ public class LibraryMain {
             return;
         }
         manager.addBook(title, author);
+
+        // DB 저장
+        manager.saveChanges();
     }
 
     // 2. 관리자: 도서 수정 및 삭제 UI (에러 발생 지점)
@@ -143,22 +147,28 @@ public class LibraryMain {
                 System.out.print("- 새 제목 입력: ");
                 String newTitle = sc.nextLine().trim();
                 if (!newTitle.isEmpty()) {
-                    book.setAvailable(true); // 로직에 따라 수정 가능
-                    // 실제 set 로직은 manager나 book 객체 내부에서 처리
+                    book.setTitle(newTitle);
                     System.out.println("[결과] 제목이 수정되었습니다.");
                 }
             }
             case 2 -> {
                 System.out.print("- 새 저자 입력: ");
                 String newAuthor = sc.nextLine().trim();
-                // 저자 수정 로직...
-                System.out.println("[결과] 저자명이 수정되었습니다.");
+                if (!newAuthor.isEmpty()) {
+                    book.setAuthor(newAuthor);
+                    System.out.println("[결과] 저자명이 수정되었습니다.");
+                }
             }
             case 3 -> {
                 manager.deleteBook(id);
                 System.out.println("[결과] 삭제되었습니다.");
+
+
             }
         }
+
+        // DB 저장
+        manager.saveChanges();
     }
 
     // 3. 사용자: 도서 대출 UI
@@ -172,6 +182,9 @@ public class LibraryMain {
         } else {
             System.out.println("[오류] 대출할 수 없는 도서이거나 이미 대출 중입니다.");
         }
+
+        // DB 저장
+        manager.saveChanges();
     }
 
     // 4. 사용자: 도서 반납 UI
@@ -185,6 +198,9 @@ public class LibraryMain {
         } else {
             System.out.println("[오류] 반납할 수 없는 도서입니다.");
         }
+
+        // DB 저장
+        manager.saveChanges();
     }
 
     // 5. 공통: 전체 목록 출력 UI

@@ -85,14 +85,17 @@ class LibraryRepositoryTest {
     @Test
     @DisplayName("DB로부터 사용자 데이터 로드 테스트 (loadUsers)")
     void loadUsers() {
-        // When: 로드 실행 (setUp에서 추가한 admin 계정이 존재해야 함)
-        List<User> users = repository.loadUsers();
+        // When: 로드 실행 (이제 단일 User 객체를 반환함)
+        User user = repository.loadUser("admin", "1111");
 
-        // Then: 리스트 검증
-        assertNotNull(users, "사용자 리스트는 null일 수 없습니다.");
-        assertFalse(users.isEmpty(), "최소 한 명 이상의 사용자가 로드되어야 합니다.");
+        // Then: 데이터 검증
+        // 1. 객체가 null이 아닌지 확인 (조회 성공 여부)
+        assertNotNull(user, "조회된 사용자 객체는 null일 수 없습니다.");
 
-        boolean hasAdmin = users.stream().anyMatch(u -> u.getUserId().equals("admin"));
-        assertTrue(hasAdmin, "DB 목록에 admin 계정이 포함되어야 합니다.");
+        // 2. ID가 일치하는지 확인 (기존의 stream().anyMatch()를 대체)
+        assertEquals("admin", user.getUserId(), "조회된 ID가 'admin'이어야 합니다.");
+
+        // 3. 권한(Type)도 맞는지 확인해보면 좋습니다.
+        assertEquals("ADMIN", user.getRole(), "사용자 권한이 'ADMIN'이어야 합니다.");
     }
 }
