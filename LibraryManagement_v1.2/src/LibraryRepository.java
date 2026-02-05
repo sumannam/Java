@@ -9,7 +9,12 @@ public class LibraryRepository {
     private final String PASSWORD = "security";
 
     /**
-     * MariaDB 연결을 위한 전용 메소드
+     * MariaDB 연결을 위한 전용 메소드입니다.
+     * <p>JDBC 드라이버를 로드하고 설정된 정보를 바탕으로 {@link Connection} 객체를 생성합니다.</p>
+     * * @return 데이터베이스 연결 객체
+     * @throws SQLException 드라이버 로드 실패 또는 연결 정보가 부적절할 경우 발생
+     *
+     * @see <a href="https://mariadb.com/kb/en/about-mariadb-connector-j/">MariaDB Connector/J Documentation</a>
      */
     private Connection getConnection() throws SQLException {
         try {
@@ -21,8 +26,12 @@ public class LibraryRepository {
     }
 
     /**
-     * [추가] 메모리의 모든 도서 정보를 MariaDB에 저장(동기화)합니다.
-     * CSV의 '전체 저장' 기능을 DB의 Upsert 로직으로 변환한 것입니다.
+     * 메모리의 모든 도서 정보를 MariaDB에 동기화(저장)합니다.
+     * <p>기존 CSV의 '전체 저장' 기능을 DB의 Upsert(Insert or Update) 로직으로 변환하여 구현하였습니다.</p>
+     * <p>성능 최적화를 위해 Batch 처리를 수행하며, 중복된 ID가 있을 경우 정보를 업데이트합니다.</p>
+     * * @param bookMap 동기화할 도서 데이터 맵
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/22">Issue #22: 종료 시 데이터 영속화 문제 해결</a>
      */
     public void saveBooks(Map<Integer, Book> bookMap) {
         // 중복된 ID가 있으면 업데이트, 없으면 삽입하는 MariaDB 쿼리
@@ -62,7 +71,9 @@ public class LibraryRepository {
     }
 
     /**
-     * DB로부터 모든 도서 데이터를 로드합니다.
+     * 데이터베이스로부터 모든 도서 정보를 조회하여 메모리에 로드합니다.
+     * * @return 도서 ID를 키로 하는 도서 정보 맵
+     * @see <a href="https://github.com/sumannam/Java/issues/23">Issue #23: 초기 구동 시 DB 데이터 로딩</a>
      */
     public Map<Integer, Book> loadBooks() {
         Map<Integer, Book> bookMap = new HashMap<>();
@@ -88,7 +99,14 @@ public class LibraryRepository {
     }
 
     /**
-     * DB로부터 사용자 목록을 로드합니다.
+     * 사용자 로그인을 위한 정보를 조회합니다.
+     * <p><b>보안 실습 주의:</b> 현재 이 메소드는 SQL Injection 공격에 취약하도록 의도적으로 설계되었습니다.</p>
+     * <p>입력값이 쿼리문에 직접 결합되는 방식의 위험성을 교육하기 위한 용도로만 사용하십시오.</p>
+     * * @param id 사용자 아이디
+     * @param pw 사용자 비밀번호
+     * @return 인증된 {@link User} 객체 (일치 정보 없을 시 null)
+     *
+     * @see <a href="https://github.com/sumannam/Java/issues/40">Issue #40: SQL Injection 취약점 개발</a>
      */
     public User loadUser(String id, String pw) {
         //String sql = "SELECT * FROM users WHERE user_id = ? AND password = ?";
